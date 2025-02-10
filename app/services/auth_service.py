@@ -10,14 +10,16 @@ from datetime import datetime, timedelta, timezone
 from settings import (
     DEFAULT_PROFILE_PIC,
     GOOGLE_TOKEN_INFO_URL,
-    JWT_SECRET_KEY,
-    JWT_ALGORITHM,
     ACCESS_TOKEN_EXPIRE_MINUTES,
     REFRESH_TOKEN_EXPIRE_DAYS,
 )
 from app.models.user import User
 from app.schemas.user import UserCreate
 from app.models.token import Token
+import os
+
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+JWT_ALGORITHM = os.getenv("JWT_ALGORITHM")
 
 
 def create_access_token(data: dict, expires_delta: timedelta):
