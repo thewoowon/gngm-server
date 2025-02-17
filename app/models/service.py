@@ -16,7 +16,7 @@ class Service(Base):
     is_representative = Column(Integer, nullable=False, default=0)
     # 대표 이미지
     representative_image = Column(String, nullable=True)
-    store_id = Column(Integer, ForeignKey("store.id"))
+    store_id = Column(Integer, ForeignKey("store.id", ondelete="CASCADE"))
     service_category_id = Column(Integer, ForeignKey("service_category.id"))
 
     # 관계 설정

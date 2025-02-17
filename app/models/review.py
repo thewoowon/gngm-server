@@ -10,8 +10,8 @@ class Review(Base):
     title = Column(String, nullable=False)
     contents = Column(String, nullable=False)
     score = Column(Integer, nullable=False)
-    user_id = Column(Integer, ForeignKey("user.id"))
-    store_id = Column(Integer, ForeignKey("store.id"))
+    user_id = Column(Integer, ForeignKey("user.id", ondelete="CASCADE"))
+    store_id = Column(Integer, ForeignKey("store.id", ondelete="CASCADE"))
 
     # 관계 설정
     user = relationship("User")

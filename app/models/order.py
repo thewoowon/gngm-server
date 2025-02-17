@@ -18,4 +18,5 @@ class Order(Base):
     store = relationship("Store", back_populates="orders")
     service = relationship("Service", back_populates="orders")
     images = relationship("Image", back_populates="order")
-    deliveries = relationship("Delivery", back_populates="order")
+    deliveries = relationship(
+        "Delivery", back_populates="order", cascade="all, delete-orphan")

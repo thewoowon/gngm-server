@@ -1,6 +1,13 @@
 from fastapi import HTTPException, Request
 from sqlalchemy.orm import Session
+from app.models.article import Article
+from app.models.chat import Chat
+from app.models.delivery import Delivery
+from app.models.notification import Notification
+from app.models.order import Order
+from app.models.review import Review
 from app.models.user import User
+from app.models.message import Message
 from app.schemas.user import UserCreate, UserUpdate
 from fastapi.responses import JSONResponse
 
@@ -39,6 +46,44 @@ async def update_user(db: Session, user_id: int, request: Request):
 
 
 def delete_user(db: Session, user_id: int):
+    # user_id와 관계된 모든 데이터 삭제 필요
+    # Article, Chat,
+    # Delivery, Order,
+    # Review, Store,
+    # Service, Upload,
+    # Notification, Message
+    # User -> Chat delete -> Message는 cascade로 삭제됨
+
+    # 혹시 모르니까 Notification도 삭제
+    notifications = db.query(Notification).filter(
+        Notification.user_id == user_id).all()
+    for notification in notifications:
+        db.delete(notification)
+
+    deliveries = db.query(Delivery).filter(Delivery.user_id == user_id).all()
+    for delivery in deliveries:
+        db.delete(delivery)
+
+    articles = db.query(Article).filter(Article.user_id == user_id).all()
+    for article in articles:
+        db.delete(article)
+
+    orders = db.query(Order).filter(Order.user_id == user_id).all()
+    for order in orders:
+        db.delete(order)
+
+    reviews = db.query(Review).filter(Review.user_id == user_id).all()
+    for review in reviews:
+        db.delete(review)
+
+    messages = db.query(Message).filter(Message.sender_id == user_id).all()
+    for message in messages:
+        db.delete(message)
+
+    chats = db.query(Chat).filter(Chat.founder_id == user_id).all()
+    for chat in chats:
+        db.delete(chat)
+
     db_user = db.query(User).filter(User.id == user_id).first()
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
