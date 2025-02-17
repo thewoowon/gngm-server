@@ -1,8 +1,8 @@
-"""20250209 new alembic generate table
+"""Update relation rules and adjust cascading
 
-Revision ID: 8a9e89e13b6f
+Revision ID: a609c4c67f13
 Revises: 
-Create Date: 2025-02-09 23:23:34.370533
+Create Date: 2025-02-17 23:15:47.812310
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '8a9e89e13b6f'
+revision: str = 'a609c4c67f13'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -97,7 +97,7 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.Column('updated_at', sa.DateTime(), nullable=False),
-    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
+    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_store_id'), 'store', ['id'], unique=False)
@@ -146,8 +146,8 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.Column('updated_at', sa.DateTime(), nullable=False),
-    sa.ForeignKeyConstraint(['store_id'], ['store.id'], ),
-    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
+    sa.ForeignKeyConstraint(['store_id'], ['store.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_review_id'), 'review', ['id'], unique=False)
@@ -165,7 +165,7 @@ def upgrade() -> None:
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.Column('updated_at', sa.DateTime(), nullable=False),
     sa.ForeignKeyConstraint(['service_category_id'], ['service_category.id'], ),
-    sa.ForeignKeyConstraint(['store_id'], ['store.id'], ),
+    sa.ForeignKeyConstraint(['store_id'], ['store.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_service_id'), 'service', ['id'], unique=False)
