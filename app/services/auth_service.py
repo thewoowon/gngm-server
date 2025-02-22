@@ -156,6 +156,8 @@ async def google_auth_web(request: Request, db: Session):
         token_res = requests.post(token_url, data=token_data)
         token_json = token_res.json()
 
+        print("token_json:", token_json)
+
         if "access_token" not in token_json:
             raise HTTPException(
                 status_code=400, detail="Failed to get access token")
@@ -220,7 +222,10 @@ async def google_auth_web(request: Request, db: Session):
     except Exception as e:
         print("Error:", e)
         print("Failed to verify token")
-        raise HTTPException(status_code=400, detail="Invalid token")
+        return JSONResponse(
+            content={"user": "", "access_token": ""},
+            status_code=200,
+        )
 
 
 def naver_auth(access_token: str):
