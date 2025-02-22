@@ -150,7 +150,7 @@ async def google_auth_web(request: Request, db: Session):
             "client_secret": GOOGLE_CLIENT_SECRET,
             "code": code,
             "grant_type": "authorization_code",
-            "redirect_uri": "http://localhost:3000/auth/callback/google"
+            "redirect_uri": "https://www.lululala.at/auth/callback/google"
         }
 
         token_res = requests.post(token_url, data=token_data)
