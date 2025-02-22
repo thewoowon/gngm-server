@@ -137,7 +137,7 @@ async def google_auth_web(request: Request, db: Session):
         if not code:
             raise HTTPException(status_code=400, detail="code is required")
 
-        REDIRECT_URI = "https://www.lululala.at/auth/callback/google"
+        REDIRECT_URI = "https://lululala.at/auth/callback/google"
         print("REDIRECT_URI:", REDIRECT_URI)
 
         # 🔹 1. Google 서버에서 Access Token 요청
