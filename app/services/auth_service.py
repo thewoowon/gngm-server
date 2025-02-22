@@ -20,6 +20,8 @@ import os
 
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM")
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 
 
 def create_access_token(data: dict, expires_delta: timedelta):
@@ -118,6 +120,100 @@ async def google_auth(request: Request, db: Session):
                 "user": user_data,
                 "access_token": access_token,
                 "refresh_token": refresh_token,
+            },
+            status_code=200,
+        )
+    except Exception as e:
+        print("Error:", e)
+        print("Failed to verify token")
+        raise HTTPException(status_code=400, detail="Invalid token")
+
+
+async def google_auth_web(request: Request, db: Session):
+    try:
+        data = await request.json()
+        code = data.get("code")
+
+        if not code:
+            raise HTTPException(status_code=400, detail="code is required")
+
+        print("code:", code)
+        print(GOOGLE_CLIENT_ID)
+        print(GOOGLE_CLIENT_SECRET)
+        print(JWT_ALGORITHM)
+        print(JWT_SECRET_KEY)
+
+        # 🔹 1. Google 서버에서 Access Token 요청
+        token_url = "https://oauth2.googleapis.com/token"
+        token_data = {
+            "client_id": GOOGLE_CLIENT_ID,
+            "client_secret": GOOGLE_CLIENT_SECRET,
+            "code": code,
+            "grant_type": "authorization_code",
+            "redirect_uri": "http://localhost:3000/auth/callback/google"
+        }
+
+        token_res = requests.post(token_url, data=token_data)
+        token_json = token_res.json()
+
+        if "access_token" not in token_json:
+            raise HTTPException(
+                status_code=400, detail="Failed to get access token")
+
+        access_token = token_json["access_token"]
+
+        # 🔹 2. Access Token을 사용해 사용자 정보 요청
+        user_info_url = "https://www.googleapis.com/oauth2/v2/userinfo"
+        user_res = requests.get(user_info_url, headers={
+                                "Authorization": f"Bearer {access_token}"})
+        user_json = user_res.json()
+
+        if "email" not in user_json:
+            raise HTTPException(
+                status_code=400, detail="Failed to get user info")
+
+        email = user_json["email"]
+
+        if not email:
+            raise HTTPException(
+                status_code=400, detail="Email is missing in token")
+
+        # 사용자 조회 또는 생성
+        user = db.query(User).filter(User.email == email).first()
+
+        if not user:
+            return JSONResponse(
+                content={"user": "", "access_token": ""},
+                status_code=200,
+            )
+
+        # 토큰 생성
+        access_token_expires = timedelta(minutes=10)
+
+        # 10분 뒤 만료되는 토큰 발급
+        access_token = create_access_token(
+            data={"sub": user.email, "user_id": user.id}, expires_delta=access_token_expires
+        )
+
+        # 사용자 데이터 및 토큰 반환
+        user_data = {
+            "id": user.id,
+            "name": user.name,
+            "nickname": user.nickname,
+            "email": user.email,
+            "phone_number": user.phone_number,
+            "address": user.address,
+            "src": user.src,
+            "is_auto_login": user.is_auto_login,
+            "job": user.job,
+            "job_description": user.job_description,
+            "is_job_open": user.is_job_open,
+        }
+
+        return JSONResponse(
+            content={
+                "user": user_data,
+                "access_token": access_token,
             },
             status_code=200,
         )
