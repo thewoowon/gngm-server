@@ -137,11 +137,8 @@ async def google_auth_web(request: Request, db: Session):
         if not code:
             raise HTTPException(status_code=400, detail="code is required")
 
-        print("code:", code)
-        print(GOOGLE_CLIENT_ID)
-        print(GOOGLE_CLIENT_SECRET)
-        print(JWT_ALGORITHM)
-        print(JWT_SECRET_KEY)
+        REDIRECT_URI = "https://www.lululala.at/auth/callback/google"
+        print("REDIRECT_URI:", REDIRECT_URI)
 
         # 🔹 1. Google 서버에서 Access Token 요청
         token_url = "https://oauth2.googleapis.com/token"
@@ -150,7 +147,7 @@ async def google_auth_web(request: Request, db: Session):
             "client_secret": GOOGLE_CLIENT_SECRET,
             "code": code,
             "grant_type": "authorization_code",
-            "redirect_uri": "https://www.lululala.at/auth/callback/google"
+            "redirect_uri": REDIRECT_URI,
         }
 
         token_res = requests.post(token_url, data=token_data)
