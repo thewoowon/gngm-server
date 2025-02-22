@@ -2,12 +2,20 @@
 from fastapi import APIRouter, Request, Depends
 from fastapi.responses import JSONResponse
 from app.core.security import get_current_user
-from app.services.auth_service import google_auth, naver_auth, kakao_auth, refresh_token_func
+from app.services.auth_service import google_auth, naver_auth, kakao_auth, refresh_token_func, google_auth_web
 from app.dependencies import get_db
 from sqlalchemy.orm import Session
 # from fastapi import FastAPI, Header
 
 router = APIRouter()
+
+
+@router.post("/web/google")
+async def google_web(request: Request, db: Session = Depends(get_db)):
+    """
+    Google web login
+    """
+    return await google_auth_web(request=request, db=db)
 
 
 @router.post("/google")
