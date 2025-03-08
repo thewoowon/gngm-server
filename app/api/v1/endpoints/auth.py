@@ -34,8 +34,8 @@ def kakao(access_token: str):
 
 
 @router.post("/apple")
-def apple(request: Request, db: Session = Depends(get_db)):
-    return apple_auth(request, db)
+async def apple(request: Request, db: Session = Depends(get_db)):
+    return await apple_auth(request, db)
 
 
 @router.post("/guest")
