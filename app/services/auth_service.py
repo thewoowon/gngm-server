@@ -281,7 +281,7 @@ def verify_identity_token(identity_token):
         identity_token,
         key,
         algorithms=["RS256"],
-        audience="com.your.app.bundle"  # iOS 번들 ID
+        audience="com.lululala.gngm"
     )
 
     return decoded_token
@@ -294,7 +294,11 @@ async def apple_auth(request: Request, db: Session):
         identity_token = payload.get("identityToken")
         # authorization_code = payload.get("authorizationCode")
 
+        print("identity_token:", identity_token)
+
         decoded_token = verify_identity_token(identity_token)
+
+        print("decoded_token:", decoded_token)
 
         # Apple이 제공한 이메일 (최초 로그인 시만 제공)
         email = decoded_token.get("email")
