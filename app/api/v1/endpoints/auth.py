@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Request, Depends
 from fastapi.responses import JSONResponse
 from app.core.security import get_current_user
-from app.services.auth_service import google_auth, naver_auth, kakao_auth, refresh_token_func, google_auth_web
+from app.services.auth_service import google_auth, naver_auth, kakao_auth, refresh_token_func, google_auth_web, apple_notification, guest_login, apple_auth
 from app.dependencies import get_db
 from sqlalchemy.orm import Session
 # from fastapi import FastAPI, Header
@@ -19,7 +19,7 @@ async def google_web(request: Request, db: Session = Depends(get_db)):
 
 
 @router.post("/google")
-async def google(request: Request, db: Session = Depends(get_db),):
+async def google(request: Request, db: Session = Depends(get_db)):
     return await google_auth(request, db)
 
 
@@ -31,6 +31,16 @@ def naver(access_token: str):
 @router.post("/kakao")
 def kakao(access_token: str):
     return kakao_auth(access_token)
+
+
+@router.post("/apple")
+def apple(request: Request, db: Session = Depends(get_db)):
+    return apple_auth(request, db)
+
+
+@router.post("/guest")
+def guest(db: Session = Depends(get_db)):
+    return guest_login(db)
 
 
 # /auth/validate-token -> 토큰 유효성 검사

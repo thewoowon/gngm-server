@@ -23,6 +23,9 @@ JWT_ALGORITHM = os.getenv("JWT_ALGORITHM")
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 
+# Apple 공개 키 URL
+APPLE_PUBLIC_KEYS_URL = "https://appleid.apple.com/auth/keys"
+
 
 def create_access_token(data: dict, expires_delta: timedelta):
     to_encode = data.copy()
@@ -247,6 +250,120 @@ def kakao_auth(access_token: str):
     return JSONResponse(content={"user": user_info}, status_code=200)
 
 
+async def apple_notification(request: Request, db: Session):
+    try:
+        payload = await request.json()
+        notification_type = payload.get("notification_type")
+        sub = payload.get("sub")
+
+        if notification_type == "REVOKE":
+            # 사용자 계정 처리 (ex. Apple 로그인 해제)
+            print(f"User {sub} revoked Apple login")
+
+        return {"status": "received"}
+    except Exception as e:
+        print("Error", e)
+        print("Failed to verify token")
+        raise HTTPException(status_code=400, detail="Invalid token")
+
+
+def get_apple_public_keys():
+    response = requests.get(APPLE_PUBLIC_KEYS_URL)
+    return response.json()["keys"]
+
+
+def verify_identity_token(identity_token):
+    apple_keys = get_apple_public_keys()
+    header = jwt.get_unverified_header(identity_token)
+    key = next(k for k in apple_keys if k["kid"] == header["kid"])
+
+    decoded_token = jwt.decode(
+        identity_token,
+        key,
+        algorithms=["RS256"],
+        audience="com.your.app.bundle"  # iOS 번들 ID
+    )
+
+    return decoded_token
+
+
+async def apple_auth(request: Request, db: Session):
+    try:
+
+        payload = await request.json()
+        identity_token = payload.get("identityToken")
+        # authorization_code = payload.get("authorizationCode")
+
+        decoded_token = verify_identity_token(identity_token)
+
+        # Apple이 제공한 이메일 (최초 로그인 시만 제공)
+        email = decoded_token.get("email")
+
+        full_name = decoded_token.get("full_name")
+
+        # 사용자 조회 또는 생성
+        user = db.query(User).filter(User.email == email).first()
+
+        if not user:
+            # 새로운 사용자 생성
+            user = create_user(
+                db=db,
+                user=UserCreate(
+                    name=full_name.get("given_name", "Unknown") +
+                    " " + full_name.get("family_name", "Unknown"),
+                    nickname="",
+                    email=email,
+                    phone_number="",
+                    address="",
+                    src=DEFAULT_PROFILE_PIC,
+                    is_auto_login=False,
+                    job="",
+                    job_description="",
+                    is_job_open=0,
+                ),
+            )
+
+        # 토큰 생성
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        refresh_token_expires = timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+
+        access_token = create_access_token(
+            data={"sub": user.email, "user_id": user.id}, expires_delta=access_token_expires
+        )
+        refresh_token = create_refresh_token(
+            data={"sub": user.email, "user_id": user.id}, expires_delta=refresh_token_expires
+        )
+
+        # 사용자 데이터 및 토큰 반환
+        user_data = {
+            "id": user.id,
+            "name": user.name,
+            "nickname": user.nickname,
+            "email": user.email,
+            "phone_number": user.phone_number,
+            "address": user.address,
+            "src": user.src,
+            "is_auto_login": user.is_auto_login,
+            "job": user.job,
+            "job_description": user.job_description,
+            "is_job_open": user.is_job_open,
+        }
+
+        return JSONResponse(
+            content={
+                "user": user_data,
+                "access_token": access_token,
+                "refresh_token": refresh_token,
+            },
+            status_code=200,
+        )
+
+    except Exception as e:
+        print("Error:", e)
+        print("Failed to verify token")
+        raise HTTPException(status_code=400, detail="Invalid token")
+
+
 def refresh_token_func(request: Request, db: Session):
     try:
         # 1. Refresh Token 디코딩 및 검증 -> 토큰이 유효하지 않거나 만료된 경우 예외 발생
@@ -288,3 +405,52 @@ def refresh_token_func(request: Request, db: Session):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired refresh token"
         )
+
+
+def guest_login(db: Session):
+    try:
+        # guest login은 email이 guest@lululala.com
+        user = db.query(User).filter(
+            User.email == "guest@lululala.com").first()
+
+        print("user:", user)
+
+        # 토큰 생성 -> 1시간 뒤 만료되는 토큰 발급
+        access_token_expires = timedelta(minutes=60)
+        refresh_token_expires = timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+
+        access_token = create_access_token(
+            data={"sub": user.email, "user_id": user.id}, expires_delta=access_token_expires
+        )
+        refresh_token = create_refresh_token(
+            data={"sub": user.email, "user_id": user.id}, expires_delta=refresh_token_expires
+        )
+
+        # 사용자 데이터 및 토큰 반환
+        user_data = {
+            "id": user.id,
+            "name": user.name,
+            "nickname": user.nickname,
+            "email": user.email,
+            "phone_number": user.phone_number,
+            "address": user.address,
+            "src": user.src,
+            "is_auto_login": user.is_auto_login,
+            "job": user.job,
+            "job_description": user.job_description,
+            "is_job_open": user.is_job_open,
+        }
+
+        return JSONResponse(
+            content={
+                "user": user_data,
+                "access_token": access_token,
+                "refresh_token": refresh_token,
+            },
+            status_code=200,
+        )
+
+    except Exception as e:
+        print("Error:", e)
+        print("Failed to verify token")
+        raise HTTPException(status_code=400, detail="Invalid token")
