@@ -5,6 +5,7 @@ description = ""
 authors = ["thewoowon <thewoowon@naver.com>"]
 license = "MIT"
 readme = "README.md"
+package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.11"
@@ -21,6 +22,7 @@ requests = "^2.32.3"
 pyjwt = "^2.10.1"
 python-multipart = "^0.0.20"
 httpx = "^0.28.1"
+cryptography = "^44.0.2"
 
 
 [build-system]
