@@ -6,6 +6,7 @@ from app.services.user_service import create_user
 from app.core.security import decode_token
 import requests
 import jwt
+from jwt.algorithms import RSAAlgorithm
 from datetime import datetime, timedelta, timezone
 from settings import (
     DEFAULT_PROFILE_PIC,
@@ -272,33 +273,50 @@ def get_apple_public_keys():
     return response.json()["keys"]
 
 
-def verify_identity_token(identity_token):
-    apple_keys = get_apple_public_keys()
-    header = jwt.get_unverified_header(identity_token)
-    key = next(k for k in apple_keys if k["kid"] == header["kid"])
+def decode_and_verify_identity_token(identity_token: str, audience: str):
+    """Apple의 identityToken을 검증 및 디코딩"""
 
+    # 1. Apple 공개 키 가져오기
+    apple_keys = get_apple_public_keys()
+
+    # 2. identityToken의 헤더에서 'kid' 값을 가져옴
+    header = jwt.get_unverified_header(identity_token)
+    key = next((k for k in apple_keys if k["kid"] == header["kid"]), None)
+
+    if key is None:
+        raise ValueError(
+            "Invalid identityToken: No matching Apple public key found.")
+
+    print("key:", key)
+
+    # 3. Apple 공개 키를 PEM 형식으로 변환
+    public_key = RSAAlgorithm.from_jwk(key)  # ✅ RSAAlgorithm 사용
+
+    print(public_key)
+
+    # 4. JWT 디코딩 및 검증
     decoded_token = jwt.decode(
         identity_token,
-        key,
+        public_key,
         algorithms=["RS256"],
-        audience="com.lululala.gngm"
+        audience=audience,  # 반드시 iOS의 번들 ID와 일치해야 함
+        issuer="https://appleid.apple.com"
     )
+
+    print("decoded_token:", decoded_token)
 
     return decoded_token
 
 
 async def apple_auth(request: Request, db: Session):
     try:
-
+        print("apple_auth")
         payload = await request.json()
         identity_token = payload.get("identityToken")
         # authorization_code = payload.get("authorizationCode")
 
-        print("identity_token:", identity_token)
-
-        decoded_token = verify_identity_token(identity_token)
-
-        print("decoded_token:", decoded_token)
+        decoded_token = decode_and_verify_identity_token(
+            identity_token, "com.lululala.gngm")
 
         # Apple이 제공한 이메일 (최초 로그인 시만 제공)
         email = decoded_token.get("email")
