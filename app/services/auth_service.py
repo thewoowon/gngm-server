@@ -323,6 +323,16 @@ async def apple_auth(request: Request, db: Session):
 
         full_name = decoded_token.get("full_name")
 
+        if not email:
+            raise HTTPException(
+                status_code=400, detail="Email is missing in token")
+
+        if not full_name:
+            full_name = {
+                "given_name": "Unknown",
+                "family_name": "Unknown"
+            }
+
         # 사용자 조회 또는 생성
         user = db.query(User).filter(User.email == email).first()
 
