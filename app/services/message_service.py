@@ -56,8 +56,8 @@ async def delete_message(db: Session, message_id: int):
         raise HTTPException(status_code=400, detail="Invalid token")
 
 
-def get_message_by_chat_id(db: Session, take: int, skip: int, chats_id: int):
-    db_messages = db.query(Message).filter(Message.chat_id == chats_id).all()
+def get_message_by_chat_id(db: Session, take: int, skip: int, chat_id: int):
+    db_messages = db.query(Message).filter(Message.chat_id == chat_id).all()
     if not db_messages:
         return []
     return db_messages
